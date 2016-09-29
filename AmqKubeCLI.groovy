@@ -197,5 +197,6 @@ System.setProperty("kubernetes.namespace", "amq")
 System.setProperty("kubernetes.labelname", "application")
 System.setProperty("kubernetes.labelvalue", "broker")
 System.setProperty("kubernetes.auth.token", "oTipQVOtgGcpJLGPh3-rLgHcSGPm77S79CTKuZ5yZpA")
+System.setProperty("kubernetes.trust.certificates", "true")
 
 setupCamel()
