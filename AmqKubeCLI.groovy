@@ -1,4 +1,4 @@
-import de.vandermeer.asciitable.v2.RenderedTable
+ import de.vandermeer.asciitable.v2.RenderedTable
 import de.vandermeer.asciitable.v2.V2_AsciiTable
 import de.vandermeer.asciitable.v2.render.V2_AsciiTableRenderer
 import de.vandermeer.asciitable.v2.render.WidthLongestWord
@@ -22,9 +22,14 @@ import org.slf4j.LoggerFactory
 @GrabResolver(name='fusesource.m2', root='https://repo.fusesource.com/nexus/content/groups/public')
 @GrabResolver(name='fusesource.ea', root='https://repo.fusesource.com/nexus/content/groups/ea')
 @GrabResolver(name='redhat.ga', root='https://maven.repository.redhat.com/ga')
-@Grab(group='io.fabric8', module='kubernetes-client', version='1.3.26.redhat-079')
-@Grab(group='io.fabric8', module='kubernetes-api', version='2.2.0.redhat-079')
-@Grab(group='io.fabric8', module='kubernetes-model', version='1.0.22.redhat-079')
+// @Grab(group='io.fabric8', module='kubernetes-client', version='1.3.26.redhat-079')
+// @Grab(group='io.fabric8', module='kubernetes-api', version='2.2.0.redhat-079')
+// @Grab(group='io.fabric8', module='kubernetes-model', version='1.0.22.redhat-079')
+
+@Grab(group='io.fabric8', module='kubernetes-client', version='3.1.4.fuse-720004-redhat-00001')
+@Grab(group='io.fabric8', module='kubernetes-api', version='3.0.11.fuse-720027-redhat-00001')
+@Grab(group='io.fabric8', module='kubernetes-model', version='2.0.10.fuse-720030-redhat-00001')
+
 @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.1')
 @Grab(group='org.apache.camel', module='camel-core', version='2.17.3')
 @Grab(group='org.apache.camel', module='camel-stream', version='2.17.3')
@@ -40,7 +45,7 @@ def static setupCamel() {
 
     camelCtx.addRoutes(new RouteBuilder() {
         def void configure() {
-            from('stream:in?promptMessage=Do tell me how I can serve the greater good...: ')
+            from('stream:in?promptMessage=AMQ Operation: ')
                     .process {
                 def commands = it.in.getBody(String.class).tokenize(' ')
                 commands.eachWithIndex { String entry, int i ->
@@ -49,6 +54,8 @@ def static setupCamel() {
                 }
             }
             .recipientList(header('route'))
+
+            from('direct:qs').to('direct:queuesize')
 
             from('direct:queuesize')
                 .setBody(constant([type:"read",
@@ -174,7 +181,7 @@ def class JolokiaResponseToSystemOutTable implements Processor {
     }
 
     def List jolokiaResponseConverter(ArrayList inputList){
-//        println JsonOutput.toJson(inputList)
+        //println JsonOutput.toJson(inputList)
         def queueValueList = []
         inputList.each { it1 ->
             def brokerName = it1.broker
@@ -191,12 +198,18 @@ def class JolokiaResponseToSystemOutTable implements Processor {
     }
 }
 
+def ipaddr = "minishift ip".execute().text.trim()
+def authToken = "oc whoami -t".execute().text.trim()
 
-System.setProperty("kubernetes.master", "https://10.1.2.2:8443")
-System.setProperty("kubernetes.namespace", "amq")
-System.setProperty("kubernetes.labelname", "application")
-System.setProperty("kubernetes.labelvalue", "broker")
-System.setProperty("kubernetes.auth.token", "oTipQVOtgGcpJLGPh3-rLgHcSGPm77S79CTKuZ5yZpA")
+
+println ipaddr
+println authToken
+
+System.setProperty("kubernetes.master", "https://$ipaddr:8443")
+System.setProperty("kubernetes.namespace", "myproject")
+System.setProperty("kubernetes.labelname", "deploymentconfig")
+System.setProperty("kubernetes.labelvalue", "broker-amq")
+System.setProperty("kubernetes.auth.token", authToken)
 System.setProperty("kubernetes.trust.certificates", "true")
 
 setupCamel()
